@@ -10,7 +10,7 @@
 
 /* スクロール領域(体験の長さ)。実体はこの高さだけ */
 .wt__scroller {
-  height: 700vh;
+  height: 1400vh;
 }
 
 .wt__stage {
