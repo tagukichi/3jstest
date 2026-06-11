@@ -8,9 +8,10 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* スクロール領域(体験の長さ)。実体はこの高さだけ */
+/* スクロール領域。1周=1400vh を2周分用意し、JSが常に中央の1周帯に位置を保つ
+   (端での巻き戻しを避け、モバイルの慣性スクロールでも周回が滑らかに繋がる) */
 .wt__scroller {
-  height: 1400vh;
+  height: 2800vh;
 }
 
 .wt__stage {
@@ -138,6 +139,56 @@
   height: 0%;
   background: #f2ede4;
   will-change: height;
+}
+
+/* 作品タップ時の拡大表示 */
+.wt__popup {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(12, 9, 6, 0.82);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.wt__popup.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.wt__popup figure {
+  margin: 0;
+  max-width: min(90vw, 1080px);
+}
+.wt__popup img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 76vh;
+  object-fit: contain;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+}
+.wt__popup figcaption {
+  margin-top: 16px;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  opacity: 0.85;
+}
+.wt__popupClose {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(242, 237, 228, 0.4);
+  border-radius: 50%;
+  background: transparent;
+  color: #f2ede4;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 /* WebGL不可時のフォールバック */
