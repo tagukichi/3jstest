@@ -13,49 +13,49 @@ import scene02 from '../../assets/scene-02.jpg';
 // ---- 進行に応じたキャプション([開始, 終了] は進行率 0..1) ----
 const CAPTIONS = [
   {
-    range: [0.01, 0.10],
+    range: [0.01, 0.09],
     en: '00 — ENTRANCE',
     title: '吹き抜けの光の下へ。',
     body: 'スクロールするだけで、建物の中を歩いて進めます。',
   },
   {
-    range: [0.13, 0.19],
+    range: [0.12, 0.19],
     en: '01 — CORRIDOR',
     title: '光をたどる回廊。',
     body: '天井の低い回廊を抜けると、空間がひらけます。',
   },
   {
-    range: [0.22, 0.32],
+    range: [0.22, 0.33],
     en: '02 — GALLERY',
     title: '作品と歩く。',
     body: '壁面の作品を眺めながら、奥のラウンジへ。',
   },
   {
-    range: [0.35, 0.43],
+    range: [0.35, 0.41],
     en: '03 — LOUNGE',
     title: '腰を下ろしたくなる場所。',
     body: '突き当たりの階段から、2階へ上がります。',
   },
   {
-    range: [0.46, 0.60],
+    range: [0.43, 0.55],
     en: '04 — STAIRS',
     title: '階段を上って、2階へ。',
     body: '折り返しの階段が、視点の高さを変えていきます。',
   },
   {
-    range: [0.63, 0.80],
+    range: [0.58, 0.73],
     en: '05 — GALLERY 2F',
     title: '上階の回遊ギャラリー。',
     body: '2階にも作品が続きます。来た道の真上を戻っていきます。',
   },
   {
-    range: [0.83, 0.90],
+    range: [0.77, 0.84],
     en: '06 — BRIDGE',
     title: '吹き抜けを見下ろす。',
     body: 'ブリッジを渡ると、エントランスの上のバルコニーへ。',
   },
   {
-    range: [0.92, 0.995],
+    range: [0.87, 0.97],
     en: '07 — RETURN',
     title: '歩いて、入り口へ。',
     body: '階段を下りて、はじめの場所に帰ってきました。',
@@ -256,56 +256,58 @@ function initWalkthrough() {
   box(13, 7.6, 0.3, 11.5, 3.8, -26);             // 南
   box(13, 7.6, 0.3, 11.5, 3.8, -34);             // 北
   box(0.3, 7.6, 8, 18, 3.8, -30);                // 東
-  // 2F床スラブ(階段の吹き抜け x12.8..18, z -27..-34 を開ける)
-  box(7.8, 0.2, 8, 8.9, 4.1, -30, woodOf(4, 4)); // x 5..12.8
-  box(5.2, 0.2, 1, 15.4, 4.1, -26.5, woodOf(3, 0.5)); // x 12.8..18, z -26..-27
-  box(5, 0.05, 3, 9.5, 3.97, -30, lightMat);     // 1Fラウンジ光天井
+  // 2F床スラブ(階段の吹き抜け x 11.2..18, z -30.4..-34 を開ける)
+  box(13, 0.2, 4.4, 11.5, 4.1, -28.2, woodOf(6, 2));  // 北側 x 5..18, z -26..-30.4
+  box(6.2, 0.2, 3.6, 8.1, 4.1, -32.2, woodOf(3, 2));  // 南西側 x 5..11.2, z -30.4..-34
+  box(5, 0.05, 3, 9, 3.97, -28.2, lightMat);     // 1Fラウンジ光天井
   box(5, 0.05, 3, 11, 7.55, -30, lightMat);      // 2F光天井
   box(0.1, 2.2, 4, 17.84, 5.8, -30, lightMat);   // 2F突き当たりの発光スリット
-  // ローベンチ
-  box(4, 0.45, 1.2, 9, 0.32, -32.6, darkMat);
-  box(4, 0.45, 1.2, 9, 0.32, -27.4, darkMat);
+  // ローベンチ(南側の壁沿い)
+  box(4, 0.45, 1.2, 8, 0.32, -27.3, darkMat);
+  box(4, 0.45, 1.2, 12.5, 0.32, -27.3, darkMat);
 
   // --- 上階全体の屋根(回廊〜ギャラリー〜ラウンジ上) ---
   box(23, 0.2, 22, 6.5, 7.7, -23, ceilMat);
 
-  // ---- 階段(段は床から立ち上がるソリッド) ----
-  const stairs = (cx, width, z0, z1, y0, y1, mat) => {
+  // ---- 階段(段は床から立ち上がるソリッド。axis='x'でx方向、'z'でz方向に進む) ----
+  const stairs = (axis, c, width, a0, a1, y0, y1, mat) => {
     const n = Math.max(2, Math.round(Math.abs(y1 - y0) / 0.17));
     for (let i = 0; i < n; i++) {
       const t0 = i / n;
       const t1 = (i + 1) / n;
-      const zA = z0 + (z1 - z0) * t0;
-      const zB = z0 + (z1 - z0) * t1;
+      const A = a0 + (a1 - a0) * t0;
+      const B = a0 + (a1 - a0) * t1;
       const top = Math.max(y0 + (y1 - y0) * t0, y0 + (y1 - y0) * t1);
-      box(width, top, Math.abs(zB - zA), cx, top / 2, (zA + zB) / 2, mat);
+      if (axis === 'x') box(Math.abs(B - A), top, width, (A + B) / 2, top / 2, c, mat);
+      else box(width, top, Math.abs(B - A), c, top / 2, (A + B) / 2, mat);
     }
   };
   const stairMat = woodOf(1, 1, 0.7);
 
-  // ラウンジの折り返し階段: 上り1(z -27→-33, 0→2m) → 踊り場 → 上り2(z -33→-27, 2→4m)
-  stairs(16.3, 1.3, -27, -33, 0, 2.0, stairMat);
-  box(3.9, 2.0, 1, 15, 1.0, -33.5, stairMat);    // 踊り場
-  stairs(13.7, 1.3, -33, -27, 2.0, 4.0, stairMat);
-  // 階段まわりのガラス手すり
-  const rail = (w, d, x, y, z, rotX = 0) => {
+  // ラウンジの折り返し階段(進行方向=東向きに正面から上る):
+  // 上り1(x 11→16.6, 0→2.1m, 北寄り) → 東端の踊り場 → 上り2(x 16.6→11, 2.1→4.2m)
+  stairs('x', -32.8, 1.3, 11, 16.6, 0, 2.1, stairMat);
+  box(1.25, 2.1, 3.0, 17.22, 1.05, -32.0, stairMat);     // 踊り場(東壁沿い)
+  stairs('x', -31.2, 1.3, 16.6, 11, 2.1, 4.2, stairMat);
+  // 階段まわりのガラス手すり(rotX=z方向の勾配 / rotZ=x方向の勾配)
+  const rail = (w, d, x, y, z, rotX = 0, rotZ = 0) => {
     const g = box(w, 1.0, d, x, y, z, glassMat);
-    g.rotation.x = rotX;
+    g.rotation.set(rotX, 0, rotZ);
     g.castShadow = false;
     const top = box(Math.max(w, 0.06), 0.05, Math.max(d, 0.06), x, y + 0.52, z, darkMat);
-    top.rotation.x = rotX;
+    top.rotation.set(rotX, 0, rotZ);
     return g;
   };
-  rail(0.06, 6.2, 15.6, 1.6, -30, Math.atan2(2, 6));     // 上り1の西側
-  rail(0.06, 6.2, 14.4, 3.6, -30, -Math.atan2(2, 6));    // 上り2の東側
-  rail(3.1, 0.06, 16.45, 4.72, -27.04);                  // 2F吹き抜け縁(北向き)
-  rail(0.06, 7, 12.84, 4.72, -30.5);                     // 2F吹き抜け縁(西側)
+  rail(5.7, 0.06, 13.8, 1.55, -32.12, 0, Math.atan2(2.1, 5.6));   // 上り1の南側
+  rail(5.7, 0.06, 13.8, 3.65, -31.88, 0, -Math.atan2(2.1, 5.6));  // 上り2の南側
+  rail(6.6, 0.06, 14.5, 4.85, -30.45);                            // 2F吹き抜け縁(北側)
+  rail(0.06, 2.1, 11.2, 4.85, -32.95);                            // 2F吹き抜け縁(西側)
 
   // --- エントランス2Fバルコニー+下り階段 ---
   box(8, 0.2, 3, 0, 4.1, -10.5, woodOf(4, 1.5)); // バルコニー床
   rail(6.6, 0.06, 0.7, 4.72, -9);                // バルコニー手すり(階段口 x -3.6..-2.6 を空ける)
   rail(0.4, 0.06, -3.8, 4.72, -9);
-  stairs(-3.1, 1.0, -9, -2, 4.2, 0, stairMat);   // 下り階段(z -9→-2 で 4.2m→0)
+  stairs('z', -3.1, 1.0, -9, -2, 4.2, 0, stairMat); // 下り階段(z -9→-2 で 4.2m→0)
   rail(0.06, 7.2, -2.55, 2.6, -5.5, Math.atan2(4.2, 7)); // 階段の東側手すり
 
   // ---- ドア枠(濃色トリム) ----
@@ -399,7 +401,7 @@ function initWalkthrough() {
   addPoint(15.3, 4.6, -30.5, 30, 10); // 階段室
   addPoint(0, 7.4, -10.5, 40, 12);    // バルコニー
 
-  // ---- カメラパス(回遊動線。目線=床+1.6m) ----
+  // ---- カメラパス(回遊動線。目線=床+1.6m)。閉ループなので何周でも歩ける ----
   const path = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0, 1.6, -1),
     new THREE.Vector3(0, 1.6, -6),
@@ -409,22 +411,20 @@ function initWalkthrough() {
     new THREE.Vector3(-1.4, 1.6, -25),
     new THREE.Vector3(0.8, 1.6, -28.6),
     new THREE.Vector3(3.4, 1.6, -31.3),
-    new THREE.Vector3(6.5, 1.6, -31.4),
-    new THREE.Vector3(9.5, 1.6, -30.3),
-    new THREE.Vector3(12.5, 1.6, -28.6),
-    new THREE.Vector3(15.3, 1.6, -27.5),
-    new THREE.Vector3(16.3, 1.9, -28.2),   // 上り1
-    new THREE.Vector3(16.3, 2.75, -30.5),
-    new THREE.Vector3(16.3, 3.5, -32.7),
-    new THREE.Vector3(15.6, 3.7, -33.4),   // 踊り場
-    new THREE.Vector3(14.2, 3.75, -33.45),
-    new THREE.Vector3(13.7, 4.0, -31.9),   // 上り2
-    new THREE.Vector3(13.7, 4.9, -29.2),
-    new THREE.Vector3(13.8, 5.55, -27.1),  // 2F着床
-    new THREE.Vector3(13.0, 5.75, -26.6),  // 吹き抜け縁の手すりを北側で回り込む
-    new THREE.Vector3(11.3, 5.8, -28.2),
-    new THREE.Vector3(8.5, 5.8, -30.2),
-    new THREE.Vector3(5.8, 5.8, -31.3),    // 2Fドア
+    new THREE.Vector3(6.5, 1.6, -31.4),    // ラウンジへ
+    new THREE.Vector3(8.8, 1.6, -32.0),
+    new THREE.Vector3(10.9, 1.75, -32.7),  // 階段正面へ
+    new THREE.Vector3(12.6, 2.2, -32.8),   // 上り1(東向きに正面から)
+    new THREE.Vector3(14.8, 3.0, -32.8),
+    new THREE.Vector3(16.3, 3.55, -32.8),
+    new THREE.Vector3(17.25, 3.75, -32.3), // 踊り場でUターン
+    new THREE.Vector3(17.25, 3.78, -31.3),
+    new THREE.Vector3(15.8, 4.0, -31.2),   // 上り2(西向き)
+    new THREE.Vector3(13.8, 4.75, -31.2),
+    new THREE.Vector3(11.9, 5.45, -31.2),
+    new THREE.Vector3(10.5, 5.8, -31.0),   // 2F着床
+    new THREE.Vector3(7.8, 5.8, -31.3),
+    new THREE.Vector3(5.8, 5.8, -31.4),    // 2Fドア
     new THREE.Vector3(3.0, 5.8, -29.8),
     new THREE.Vector3(0.5, 5.8, -26.5),
     new THREE.Vector3(0, 5.8, -22),
@@ -435,13 +435,13 @@ function initWalkthrough() {
     new THREE.Vector3(-3.1, 4.1, -6.2),
     new THREE.Vector3(-3.1, 2.7, -3.8),
     new THREE.Vector3(-2.9, 1.7, -2.0),
-    new THREE.Vector3(-1.6, 1.6, -1.2),
-    new THREE.Vector3(0.2, 1.6, -2.2),     // 出発点のそばへ帰着
-  ], false, 'centripetal');
+    new THREE.Vector3(-1.6, 1.6, -1.1),    // 出発点へ合流(閉ループ)
+  ], true, 'centripetal');
 
   // ---- 状態 ----
   let targetProgress = 0;   // スクロール由来の生の進行率
-  let progress = -1;        // 表示用(lerp追従)。-1で初回強制描画
+  let progress = 0;         // 表示用(lerp追従)。周回時は一時的に負になる
+  let primed = false;       // 初回/リサイズ後の強制描画フラグ
   let mouseX = 0;
   let mouseY = 0;
   let lookX = 0;
@@ -453,7 +453,14 @@ function initWalkthrough() {
 
   const readScroll = () => {
     const max = document.documentElement.scrollHeight - innerHeight;
-    targetProgress = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+    if (max <= 0) return;
+    // 周回: 最下部に達したら先頭へ巻き戻して2周目へ。
+    // パスが閉ループ(終点=始点)なので映像は途切れない
+    if (scrollY >= max - 0.5) {
+      progress -= 1;
+      scrollTo(0, 0);
+    }
+    targetProgress = Math.min(1, Math.max(0, scrollY / max));
     if (!hinted && targetProgress > 0.01) {
       hinted = true;
       hint.classList.add('is-hidden');
@@ -471,7 +478,7 @@ function initWalkthrough() {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
-    progress = -1; // 強制再描画
+    primed = false; // 強制再描画
     readScroll();
   });
 
@@ -489,10 +496,10 @@ function initWalkthrough() {
   };
 
   const render = () => {
-    // カメラ位置: パス終端の少し手前まで。注視点は少し先を見る
-    const t = progress * 0.965;
+    // 閉ループ上の位置(0..1に正規化)。注視点は少し先を見る
+    const t = ((progress % 1) + 1) % 1;
     path.getPointAt(t, camPos);
-    path.getPointAt(Math.min(t + 0.035, 1), camLook);
+    path.getPointAt((t + 0.035) % 1, camLook);
     camera.position.copy(camPos);
     camera.lookAt(camLook);
     // マウスでわずかに視線が振れる(reduced motion時は無効)
@@ -500,16 +507,21 @@ function initWalkthrough() {
     camera.rotation.x -= lookY * 0.03;
 
     renderer.render(scene, camera);
-    updateCaptions(progress);
-    progressFill.style.height = (progress * 100).toFixed(2) + '%';
+    updateCaptions(t);
+    progressFill.style.height = (t * 100).toFixed(2) + '%';
   };
 
   const tick = () => {
     requestAnimationFrame(tick);
 
-    const ease = reducedMotion ? 1 : 0.07;
-    const prev = progress;
-    progress = progress < 0 ? targetProgress : prev + (targetProgress - prev) * ease;
+    const forced = !primed;
+    if (!primed) {
+      progress = targetProgress;
+      primed = true;
+    } else {
+      const ease = reducedMotion ? 1 : 0.07;
+      progress += (targetProgress - progress) * ease;
+    }
 
     const targetLX = reducedMotion ? 0 : mouseX;
     const targetLY = reducedMotion ? 0 : mouseY;
@@ -518,7 +530,7 @@ function initWalkthrough() {
 
     // ほぼ静止していたら描画をスキップ(放置時のGPU負荷ゼロ化)
     const moving =
-      prev < 0 ||
+      forced ||
       Math.abs(targetProgress - progress) > 0.00003 ||
       Math.abs(targetLX - lookX) > 0.002 ||
       Math.abs(targetLY - lookY) > 0.002;
