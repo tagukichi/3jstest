@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>KOMOREBI — 空間ウォークスルー(デモ)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="wt">
+
+<!-- スクロール量を生むためのダミー領域(高さ=体験の長さ) -->
+<div class="wt__scroller" id="scroller" aria-hidden="true"></div>
+
+<!-- 3D描画先(固定) -->
+<div class="wt__stage" id="stage"
+     role="img"
+     aria-label="ギャラリー建築の内部をスクロールで歩いて進む3D空間。エントランスホール、回廊、ギャラリー、ラウンジの順に巡る"></div>
+
+<header class="wt__header">
+  <a class="wt__logo" href="./index.html">KOMOREBI<small>GARDEN LOUNGE &amp; COFFEE</small></a>
+  <span class="wt__badge">WALKTHROUGH DEMO</span>
+</header>
+
+<!-- 進行に応じて切り替わるキャプション -->
+<div class="wt__captions" id="captions"></div>
+
+<div class="wt__hint" id="hint">
+  <span class="wt__hintLine"></span>
+  <span id="hintText">SCROLL TO WALK</span>
+</div>
+
+<div class="wt__progress"><div class="wt__progressFill" id="progressFill"></div></div>
+
+<script type="module" src="./src/walkthrough/main.js"></script>
+</body>
+</html>
