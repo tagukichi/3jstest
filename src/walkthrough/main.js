@@ -229,12 +229,77 @@ function initWalkthrough() {
   box(7.6, 0.14, 0.06, 0, 0.07, -0.02, darkMat);
 
   // --- 1F回廊+2Fブリッジ(x -1.5..1.5 / z -12..-20) ---
-  box(0.3, 7.6, 8, -1.5, 3.8, -16);
-  box(0.3, 7.6, 8, 1.5, 3.8, -16);
-  box(3, 0.2, 8, 0, 3.1, -16, ceilMat);          // 1F天井
-  box(3, 0.2, 8, 0, 4.1, -16, woodOf(1.5, 4));   // ブリッジ床
-  box(0.4, 0.05, 7, 0, 2.97, -16, lightMat);     // 1F光帯
-  box(0.4, 0.05, 7, 0, 7.55, -16, lightMat);     // 2F光帯
+  // 1Fは壁、2Fはリボン窓(y 4.9..6.7, z -12.8..-19.2)から外の庭が見える
+  for (const sx of [-1, 1]) {
+    const x = 1.5 * sx;
+    box(0.3, 4.9, 8, x, 2.45, -16);                 // 窓下(1F壁を含む)
+    box(0.3, 0.9, 8, x, 7.15, -16);                 // 窓上
+    box(0.3, 1.8, 0.8, x, 5.8, -12.4);              // 窓の南端
+    box(0.3, 1.8, 0.8, x, 5.8, -19.6);              // 窓の北端
+    const pane = box(0.04, 1.8, 6.4, x, 5.8, -16, glassMat);
+    pane.castShadow = false;
+    for (const z of [-14.4, -17.6]) box(0.09, 1.8, 0.09, x, 5.8, z, darkMat); // 方立
+    box(0.12, 0.1, 6.6, x, 4.93, -16, darkMat);     // 窓枠(下)
+    box(0.12, 0.1, 6.6, x, 6.67, -16, darkMat);     // 窓枠(上)
+  }
+  box(3, 0.2, 8, 0, 3.1, -16, ceilMat);              // 1F天井
+  box(3, 0.2, 7.7, 0, 4.1, -16, woodOf(1.5, 4));     // ブリッジ床(z -12.15..-19.85)
+  box(0.4, 0.05, 7, 0, 2.97, -16, lightMat);         // 1F光帯
+  box(0.4, 0.05, 7, 0, 7.55, -16, lightMat);         // 2F光帯
+
+  // --- 窓の外の庭(明るい借景に見えるよう unlit+fog無効) ---
+  const exteriorMat = (mat) => {
+    mat.fog = false;
+    return mat;
+  };
+  const gardenTex = canvasTexture(512, (ctx, s) => {
+    // 上半分: 霞んだ空、下半分: 木立のシルエットを重ねる
+    const sky = ctx.createLinearGradient(0, 0, 0, s * 0.6);
+    sky.addColorStop(0, '#eaf2e3');
+    sky.addColorStop(1, '#cfe2c2');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, s, s * 0.6);
+    const greens = ['#6e9258', '#5a7f49', '#48693c', '#3a5731'];
+    for (let layer = 0; layer < 4; layer++) {
+      ctx.fillStyle = greens[layer];
+      const base = s * (0.34 + layer * 0.17);
+      for (let x = -20; x < s + 20; x += 14) {
+        const r = 24 + Math.random() * 30 - layer * 3;
+        ctx.beginPath();
+        ctx.arc(x, base + Math.random() * 26, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillRect(0, base + 26, s, s - base);
+    }
+  });
+  const gardenMat = exteriorMat(new THREE.MeshBasicMaterial({ map: gardenTex }));
+  const lawnMat = exteriorMat(new THREE.MeshBasicMaterial({ color: '#587747' }));
+  const leafMats = ['#4f7a42', '#5d8a4c', '#436b39'].map(
+    (c) => exteriorMat(new THREE.MeshBasicMaterial({ color: c })),
+  );
+  for (const sx of [-1, 1]) {
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(20, 14), gardenMat);
+    back.position.set(10 * sx, 6, -16);
+    back.rotation.y = (-Math.PI / 2) * sx; // 室内側を向ける
+    building.add(back);
+    // 芝生(建物の隙間 z -12..-20 の帯に収め、室内の床と重ねない)
+    const lawn = new THREE.Mesh(new THREE.PlaneGeometry(8.3, 7.6), lawnMat);
+    lawn.rotation.x = -Math.PI / 2;
+    lawn.position.set(5.85 * sx, 0.02, -16);
+    building.add(lawn);
+    // 手前の木(ローポリ)
+    for (const [tz, th] of [[-13.2, 5.6], [-16, 6.6], [-18.8, 5.2]]) {
+      const tx = (4.6 + Math.random() * 1.2) * sx;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, th * 0.55, 8), darkMat);
+      trunk.position.set(tx, th * 0.27, tz);
+      building.add(trunk);
+      for (let i = 0; i < 3; i++) {
+        const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.9 - i * 0.18, 0), leafMats[i % 3]);
+        leaf.position.set(tx + (Math.random() - 0.5) * 0.8, th * 0.55 + i * 0.7, tz + (Math.random() - 0.5) * 0.8);
+        building.add(leaf);
+      }
+    }
+  }
 
   // --- ギャラリーB(x -5..5 / z -20..-34) 1F+2F共通の外殻 ---
   box(3.5, 7.6, 0.3, -3.25, 3.8, -20);           // 南(開口の左)
@@ -247,7 +312,9 @@ function initWalkthrough() {
   box(0.3, 0.4, 3, 5, 7.4, -31.5);               // 東2Fドア上
   box(0.3, 7.6, 1, 5, 3.8, -33.5);               // 東(z -33..-34)
   box(10.3, 7.6, 0.3, 0, 3.8, -34);              // 北
-  box(10, 0.2, 14, 0, 4.1, -27, woodOf(5, 7));   // 2F床スラブ(=1F天井)
+  // 2F床スラブ(=1F天井)。ドア敷居の帯(上面y4.2)と重ならないよう
+  // z -20.15..-34 / x -5..4.85 に控える(同一平面のZファイティング防止)
+  box(9.85, 0.2, 13.85, -0.075, 4.1, -27.075, woodOf(5, 7));
   for (const z of [-23, -27, -31]) box(6, 0.05, 0.4, 0, 3.97, z, lightMat);
   box(0.06, 0.14, 13.8, -4.82, 0.07, -27, darkMat);
   box(0.06, 0.14, 9.8, 4.82, 0.07, -24.9, darkMat);
@@ -256,9 +323,10 @@ function initWalkthrough() {
   box(13, 7.6, 0.3, 11.5, 3.8, -26);             // 南
   box(13, 7.6, 0.3, 11.5, 3.8, -34);             // 北
   box(0.3, 7.6, 8, 18, 3.8, -30);                // 東
-  // 2F床スラブ(階段の吹き抜け x 11.2..18, z -30.4..-34 を開ける)
-  box(13, 0.2, 4.4, 11.5, 4.1, -28.2, woodOf(6, 2));  // 北側 x 5..18, z -26..-30.4
-  box(6.2, 0.2, 3.6, 8.1, 4.1, -32.2, woodOf(3, 2));  // 南西側 x 5..11.2, z -30.4..-34
+  // 2F床スラブ(階段の吹き抜け x 11.2..18, z -30.4..-34 を開ける)。
+  // x=5 のドア帯(上面y4.2)と重ならないよう x 5.15 から始める
+  box(12.85, 0.2, 4.4, 11.575, 4.1, -28.2, woodOf(6, 2)); // 北側 x 5.15..18, z -26..-30.4
+  box(6.05, 0.2, 3.6, 8.175, 4.1, -32.2, woodOf(3, 2));   // 南西側 x 5.15..11.2, z -30.4..-34
   box(5, 0.05, 3, 9, 3.97, -28.2, lightMat);     // 1Fラウンジ光天井
   box(5, 0.05, 3, 11, 7.55, -30, lightMat);      // 2F光天井
   box(0.1, 2.2, 4, 17.84, 5.8, -30, lightMat);   // 2F突き当たりの発光スリット
@@ -266,8 +334,9 @@ function initWalkthrough() {
   box(4, 0.45, 1.2, 8, 0.32, -27.3, darkMat);
   box(4, 0.45, 1.2, 12.5, 0.32, -27.3, darkMat);
 
-  // --- 上階全体の屋根(回廊〜ギャラリー〜ラウンジ上) ---
-  box(23, 0.2, 22, 6.5, 7.7, -23, ceilMat);
+  // --- 上階の屋根(ブリッジ上は窓外の庭を覆わないよう幅を絞る) ---
+  box(3.6, 0.2, 8, 0, 7.7, -16, ceilMat);   // 回廊・ブリッジ上
+  box(23, 0.2, 14, 6.5, 7.7, -27, ceilMat); // ギャラリー・ラウンジ上(z -20..-34)
 
   // ---- 階段(段は床から立ち上がるソリッド。axis='x'でx方向、'z'でz方向に進む) ----
   const stairs = (axis, c, width, a0, a1, y0, y1, mat) => {
@@ -304,7 +373,7 @@ function initWalkthrough() {
   rail(0.06, 2.1, 11.2, 4.85, -32.95);                            // 2F吹き抜け縁(西側)
 
   // --- エントランス2Fバルコニー+下り階段 ---
-  box(8, 0.2, 3, 0, 4.1, -10.5, woodOf(4, 1.5)); // バルコニー床
+  box(8, 0.2, 2.85, 0, 4.1, -10.425, woodOf(4, 1.5)); // バルコニー床(z -11.85..-9。敷居帯と重ねない)
   rail(6.6, 0.06, 0.7, 4.72, -9);                // バルコニー手すり(階段口 x -3.6..-2.6 を空ける)
   rail(0.4, 0.06, -3.8, 4.72, -9);
   stairs('z', -3.1, 1.0, -9, -2, 4.2, 0, stairMat); // 下り階段(z -9→-2 で 4.2m→0)
@@ -322,9 +391,10 @@ function initWalkthrough() {
   box(0.5, 3.05, 0.12, 5, 1.52, -33.05, darkMat);
   box(0.5, 0.12, 3.3, 5, 3.02, -31.5, darkMat);
 
-  // ---- 額装した作品 ----
+  // ---- 額装した作品(タップで正面へ移動+拡大表示。artworksに登録) ----
+  const artworks = [];
   const texLoader = new THREE.TextureLoader();
-  const addArtwork = (src, x, y, z, rotY) => {
+  const addArtwork = (src, title, x, y, z, rotY) => {
     const tex = texLoader.load(src);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.generateMipmaps = false;
@@ -341,16 +411,24 @@ function initWalkthrough() {
     group.position.set(x, y, z);
     group.rotation.y = rotY;
     building.add(group);
+    artworks.push({
+      mesh: img,
+      src,
+      title,
+      pos: new THREE.Vector3(x, y, z),
+      normal: new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY)), // 壁から室内へ向く法線
+      t: 0, // パス上の鑑賞位置(後で算出)
+    });
   };
-  addArtwork(scene01, 3.83, 2.6, -6, -Math.PI / 2);      // エントランス東壁
-  addArtwork(scene01, -4.8, 1.9, -24, Math.PI / 2);      // 1Fギャラリー西
-  addArtwork(scene02, 4.8, 1.9, -23, -Math.PI / 2);      // 1Fギャラリー東
-  addArtwork(scene02, -4.8, 1.9, -29.5, Math.PI / 2);    // 1Fギャラリー西(奥)
-  addArtwork(scene01, 8, 1.9, -33.8, 0);                 // 1Fラウンジ北
-  addArtwork(scene01, -4.8, 5.9, -26, Math.PI / 2);      // 2Fギャラリー西
-  addArtwork(scene02, -4.8, 5.9, -31, Math.PI / 2);      // 2Fギャラリー西(奥)
-  addArtwork(scene01, 4.8, 5.9, -22.5, -Math.PI / 2);    // 2Fギャラリー東
-  addArtwork(scene02, 10.5, 5.9, -33.8, 0);              // 2F北壁
+  addArtwork(scene01, 'No.01 — 庭に面したラウンジ', 3.83, 2.6, -6, -Math.PI / 2);   // エントランス東壁
+  addArtwork(scene01, 'No.02 — 庭に面したラウンジ', -4.8, 1.9, -24, Math.PI / 2);   // 1Fギャラリー西
+  addArtwork(scene02, 'No.03 — 本棚とテーブルのライブラリ', 4.8, 1.9, -23, -Math.PI / 2); // 1Fギャラリー東
+  addArtwork(scene02, 'No.04 — 本棚とテーブルのライブラリ', -4.8, 1.9, -29.5, Math.PI / 2); // 1Fギャラリー西(奥)
+  addArtwork(scene01, 'No.05 — 庭に面したラウンジ', 8, 1.9, -33.8, 0);              // 1Fラウンジ北
+  addArtwork(scene01, 'No.06 — 庭に面したラウンジ', -4.8, 5.9, -26, Math.PI / 2);   // 2Fギャラリー西
+  addArtwork(scene02, 'No.07 — 本棚とテーブルのライブラリ', -4.8, 5.9, -31, Math.PI / 2); // 2Fギャラリー西(奥)
+  addArtwork(scene01, 'No.08 — 庭に面したラウンジ', 4.8, 5.9, -22.5, -Math.PI / 2); // 2Fギャラリー東
+  addArtwork(scene02, 'No.09 — 本棚とテーブルのライブラリ', 10.5, 5.9, -33.8, 0);   // 2F北壁
 
   // ---- 観葉植物(ローポリの点景) ----
   const plant = (x, yBase, z, s = 1) => {
@@ -438,40 +516,131 @@ function initWalkthrough() {
     new THREE.Vector3(-1.6, 1.6, -1.1),    // 出発点へ合流(閉ループ)
   ], true, 'centripetal');
 
+  // ---- 作品ごとの「正面に立つ」パス位置を弧長サンプリングで求める ----
+  {
+    const tmp = new THREE.Vector3();
+    for (const a of artworks) {
+      const view = a.pos.clone().addScaledVector(a.normal, 2.4);
+      let best = 0;
+      let bd = Infinity;
+      for (let i = 0; i < 1500; i++) {
+        const t = i / 1500;
+        path.getPointAt(t, tmp);
+        // 高さ差を重めに罰して同じ階の地点を選ぶ
+        const d = (tmp.x - view.x) ** 2 + (tmp.z - view.z) ** 2 + ((tmp.y - a.pos.y) * 2) ** 2;
+        if (d < bd) {
+          bd = d;
+          best = t;
+        }
+      }
+      a.t = best;
+    }
+  }
+
   // ---- 状態 ----
-  let targetProgress = 0;   // スクロール由来の生の進行率
-  let progress = 0;         // 表示用(lerp追従)。周回時は一時的に負になる
+  // スクロール領域は2周分。位置を常に[0.5周, 1.5周]の帯に保ち、端に着く前に
+  // 1周分だけ静かにずらす(モバイルの慣性スクロールと巻き戻しが衝突しない)
+  let targetProgress = 1;   // スクロール由来の進行率(周回ぶん込み、おおむね0.5..1.5)
+  let progress = 1;         // 表示用(lerp追従)
   let primed = false;       // 初回/リサイズ後の強制描画フラグ
   let mouseX = 0;
   let mouseY = 0;
   let lookX = 0;
   let lookY = 0;
   let hinted = false;
+  let baseProgress = null;  // ヒント非表示判定の基準
+  let pendingArt = null;    // タップ後、到着待ちの作品
+  let pendingGoal = 0;
+  let popupAnchor = null;   // ポップアップを開いた位置(離れたら閉じる)
+  let focusArt = null;      // 視線を向ける対象の作品
+  let focusAmt = 0;         // 視線ブレンド量(0..1)
 
   const camPos = new THREE.Vector3();
   const camLook = new THREE.Vector3();
 
+  const lapHeight = () => (document.documentElement.scrollHeight - innerHeight) / 2;
+
   const readScroll = () => {
-    const max = document.documentElement.scrollHeight - innerHeight;
-    if (max <= 0) return;
-    // 周回: 最下部に達したら先頭へ巻き戻して2周目へ。
-    // パスが閉ループ(終点=始点)なので映像は途切れない
-    if (scrollY >= max - 0.5) {
-      progress -= 1;
-      scrollTo(0, 0);
+    const lapH = lapHeight();
+    if (lapH <= 0) return;
+    if (scrollY < lapH * 0.5 || scrollY > lapH * 1.5) {
+      const shift = scrollY < lapH ? lapH : -lapH;
+      const want = scrollY + shift;
+      scrollTo(0, want);
+      // 反映を確認できたときだけ関連状態も1周ぶんずらす(失敗時は次イベントで再試行)
+      if (Math.abs(scrollY - want) < 2) {
+        const d = shift / lapH;
+        progress += d;
+        pendingGoal += d;
+        if (popupAnchor !== null) popupAnchor += d;
+        if (baseProgress !== null) baseProgress += d;
+      }
     }
-    targetProgress = Math.min(1, Math.max(0, scrollY / max));
-    if (!hinted && targetProgress > 0.01) {
+    targetProgress = scrollY / lapH;
+    if (baseProgress === null) {
+      baseProgress = targetProgress;
+    } else if (!hinted && Math.abs(targetProgress - baseProgress) > 0.01) {
       hinted = true;
       hint.classList.add('is-hidden');
     }
+    if (popupAnchor !== null && Math.abs(targetProgress - popupAnchor) > 0.02) closePopup();
   };
 
   addEventListener('scroll', readScroll, { passive: true });
 
+  // ---- 作品タップ: 正面へ歩いて移動 → 到着でポップアップ表示 ----
+  const popup = document.getElementById('popup');
+  const popupImg = document.getElementById('popupImg');
+  const popupCaption = document.getElementById('popupCaption');
+  const closePopup = () => {
+    popup.classList.remove('is-open');
+    popupAnchor = null;
+    focusArt = null;
+  };
+  const openPopup = (art) => {
+    popupImg.src = art.src;
+    popupImg.alt = art.title;
+    popupCaption.textContent = art.title;
+    popup.classList.add('is-open');
+    popupAnchor = targetProgress;
+  };
+  popup.addEventListener('click', (e) => {
+    if (e.target === popup || e.target.id === 'popupClose') closePopup();
+  });
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePopup();
+  });
+
+  const raycaster = new THREE.Raycaster();
+  const pointerV = new THREE.Vector2();
+  const artMeshes = artworks.map((a) => a.mesh);
+  const pickArt = (cx, cy) => {
+    pointerV.set((cx / innerWidth) * 2 - 1, -(cy / innerHeight) * 2 + 1);
+    raycaster.setFromCamera(pointerV, camera);
+    const hit = raycaster.intersectObjects(artMeshes, false)[0];
+    return hit ? artworks[artMeshes.indexOf(hit.object)] : null;
+  };
+
+  renderer.domElement.addEventListener('click', (e) => {
+    const art = pickArt(e.clientX, e.clientY);
+    if (!art) return;
+    // 現在地から近い方の周回位置を目的地にする
+    let goal = art.t;
+    while (goal < targetProgress - 0.5) goal += 1;
+    while (goal > targetProgress + 0.5) goal -= 1;
+    goal = Math.min(1.95, Math.max(0.05, goal));
+    scrollTo(0, goal * lapHeight());
+    pendingArt = art;
+    pendingGoal = goal;
+    focusArt = art;
+  });
+
   addEventListener('pointermove', (e) => {
     mouseX = (e.clientX / innerWidth) * 2 - 1;
     mouseY = (e.clientY / innerHeight) * 2 - 1;
+    if (matchMedia('(pointer: fine)').matches) {
+      stage.style.cursor = pickArt(e.clientX, e.clientY) ? 'pointer' : '';
+    }
   });
 
   addEventListener('resize', () => {
@@ -500,6 +669,8 @@ function initWalkthrough() {
     const t = ((progress % 1) + 1) % 1;
     path.getPointAt(t, camPos);
     path.getPointAt((t + 0.035) % 1, camLook);
+    // 作品にフォーカス中は視線を作品へブレンド
+    if (focusAmt > 0.001 && focusArt) camLook.lerp(focusArt.pos, focusAmt);
     camera.position.copy(camPos);
     camera.lookAt(camLook);
     // マウスでわずかに視線が振れる(reduced motion時は無効)
@@ -528,12 +699,26 @@ function initWalkthrough() {
     lookX += (targetLX - lookX) * 0.06;
     lookY += (targetLY - lookY) * 0.06;
 
+    // 作品への移動中: 途中でユーザーがスクロールしたら中止、到着したら拡大表示
+    if (pendingArt) {
+      if (Math.abs(targetProgress - pendingGoal) > 0.01) {
+        pendingArt = null;
+        focusArt = null;
+      } else if (Math.abs(targetProgress - progress) < 0.003) {
+        openPopup(pendingArt);
+        pendingArt = null;
+      }
+    }
+    const focusTarget = focusArt ? 1 : 0;
+    focusAmt += (focusTarget - focusAmt) * (reducedMotion ? 1 : 0.08);
+
     // ほぼ静止していたら描画をスキップ(放置時のGPU負荷ゼロ化)
     const moving =
       forced ||
       Math.abs(targetProgress - progress) > 0.00003 ||
       Math.abs(targetLX - lookX) > 0.002 ||
-      Math.abs(targetLY - lookY) > 0.002;
+      Math.abs(targetLY - lookY) > 0.002 ||
+      Math.abs(focusTarget - focusAmt) > 0.002;
     if (moving) render();
   };
 
