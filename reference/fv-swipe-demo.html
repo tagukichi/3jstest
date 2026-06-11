@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>KOMOREBI — garden lounge &amp; coffee</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #16110b;
+    --paper: #f4efe6;
+    --paper-dim: rgba(244, 239, 230, 0.72);
+    --line: rgba(244, 239, 230, 0.32);
+    --serif: "Zen Old Mincho", "Hiragino Mincho ProN", serif;
+    --sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--sans);
+    overscroll-behavior-y: none;
+  }
+
+  .fv {
+    position: relative;
+    height: 100svh;
+    min-height: 560px;
+    overflow: hidden;
+  }
+  .fv__stage {
+    position: absolute;
+    inset: 0;
+    perspective: 1400px;
+    touch-action: pan-y;
+    cursor: grab;
+  }
+  .fv__stage.is-grabbing { cursor: grabbing; }
+  .fv__pan {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    will-change: transform, opacity;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .fv__pan img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+  .fv__shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(to bottom, rgba(22, 17, 11, 0.42) 0%, rgba(22, 17, 11, 0) 26%),
+      linear-gradient(to top, rgba(22, 17, 11, 0.62) 0%, rgba(22, 17, 11, 0) 46%);
+  }
+
+  .fv__header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(18px, 3vw, 32px) clamp(20px, 4vw, 48px);
+    z-index: 3;
+  }
+  .fv__logo {
+    font-family: var(--serif);
+    font-size: clamp(18px, 2vw, 22px);
+    letter-spacing: 0.34em;
+    color: var(--paper);
+    text-decoration: none;
+  }
+  .fv__logo small {
+    display: block;
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.28em;
+    color: var(--paper-dim);
+    margin-top: 4px;
+  }
+  .fv__nav { display: flex; gap: clamp(18px, 3vw, 36px); }
+  .fv__nav a {
+    color: var(--paper-dim);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    padding-bottom: 4px;
+    border-bottom: 1px solid transparent;
+    transition: color 0.3s, border-color 0.3s;
+  }
+  .fv__nav a:hover, .fv__nav a:focus-visible { color: var(--paper); border-color: var(--line); }
+  @media (max-width: 640px) { .fv__nav { display: none; } }
+
+  .fv__copy {
+    position: absolute;
+    left: clamp(20px, 4vw, 48px);
+    bottom: clamp(76px, 13svh, 120px);
+    z-index: 3;
+    display: flex;
+    gap: clamp(14px, 2vw, 22px);
+    pointer-events: none;
+  }
+  .fv__rule { width: 1px; background: var(--line); }
+  .fv__copy h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(26px, 4.6vw, 50px);
+    line-height: 1.55;
+    letter-spacing: 0.12em;
+    text-shadow: 0 1px 24px rgba(22, 17, 11, 0.45);
+  }
+  .fv__copy p {
+    margin-top: clamp(10px, 1.6vw, 16px);
+    font-size: clamp(12px, 1.4vw, 14px);
+    letter-spacing: 0.22em;
+    color: var(--paper-dim);
+  }
+
+  .fv__gauge {
+    position: absolute;
+    right: clamp(20px, 4vw, 48px);
+    bottom: clamp(28px, 5svh, 44px);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .fv__gauge span {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--paper-dim);
+  }
+  .fv__track {
+    position: relative;
+    width: 128px;
+    height: 1px;
+    background: var(--line);
+  }
+  .fv__dot {
+    position: absolute;
+    top: 50%;
+    width: 26px;
+    height: 1px;
+    background: var(--paper);
+    transform: translate(-50%, -50%);
+  }
+  .fv__count {
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    color: var(--paper-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .fv__count b { font-weight: 500; color: var(--paper); }
+
+  .fv__scroll {
+    position: absolute;
+    left: clamp(20px, 4vw, 48px);
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .fv__scroll span {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--paper-dim);
+    writing-mode: vertical-rl;
+  }
+  .fv__scroll i {
+    display: block;
+    width: 1px;
+    height: 52px;
+    background: var(--line);
+    overflow: hidden;
+    position: relative;
+  }
+  .fv__scroll i::after {
+    content: "";
+    position: absolute;
+    left: 0; top: -100%;
+    width: 1px; height: 100%;
+    background: var(--paper);
+    animation: scrollline 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  }
+  @keyframes scrollline { to { top: 100%; } }
+
+  .section {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: clamp(72px, 12vw, 140px) clamp(24px, 5vw, 48px);
+  }
+  .section h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(20px, 3vw, 28px);
+    letter-spacing: 0.2em;
+    margin-bottom: 28px;
+  }
+  .section p {
+    color: var(--paper-dim);
+    font-size: 15px;
+    line-height: 2.2;
+    letter-spacing: 0.08em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fv__scroll i::after { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="fv" id="fv">
+  <div class="fv__stage" id="stage">
+    <div class="fv__pan" data-ar="2.1973995271867612"><img src="../assets/scene-01.jpg" alt="庭に面したラウンジの内観"></div>
+    <div class="fv__pan" data-ar="2.207345971563981"><img src="../assets/scene-02.jpg" alt="本棚とテーブルのあるライブラリ空間の内観"></div>
+  </div>
+  <div class="fv__shade"></div>
+
+  <div class="fv__header">
+    <a class="fv__logo" href="#">KOMOREBI<small>GARDEN LOUNGE &amp; COFFEE</small></a>
+    <nav class="fv__nav">
+      <a href="#about">コンセプト</a>
+      <a href="#">空間</a>
+      <a href="#">メニュー</a>
+      <a href="#">アクセス</a>
+    </nav>
+  </div>
+
+  <div class="fv__copy">
+    <div class="fv__rule"></div>
+    <div>
+      <h1>庭の光と、<br>木の天井の下で。</h1>
+      <p>緑を眺めて過ごす、まちのラウンジ。</p>
+    </div>
+  </div>
+
+  <div class="fv__gauge">
+    <span id="hintText">DRAG TO LOOK AROUND</span>
+    <div class="fv__track"><div class="fv__dot" id="dot"></div></div>
+    <div class="fv__count"><b id="cur">01</b>&nbsp;/&nbsp;<span id="total">02</span></div>
+  </div>
+
+  <div class="fv__scroll"><span>SCROLL</span><i></i></div>
+</header>
+
+<main>
+  <section class="section" id="about">
+    <h2>コンセプト</h2>
+    <p>ここはFVの下に続くダミーセクションです。FVの内観はスワイプ(ドラッグ)した分だけ視点が動きます。画像の端まで動かして、さらに同じ方向へスワイプすると、次の空間へ進むように切り替わります。逆方向に端まで戻れば前の空間へ。テキストやロゴは実際のサイトの内容に差し替えてください。</p>
+  </section>
+</main>
+
+<script>
+(function () {
+  var OVERSCAN = 1.12;
+  var PULL_THRESHOLD = 90;
+  var PULL_VISUAL_MAX = 56;
+  var TRANS_DURATION = 0.85;
+  var ENTER_OFFSET = 0.62;
+
+  var stage = document.getElementById('stage');
+  var fv = document.getElementById('fv');
+  var dot = document.getElementById('dot');
+  var cur = document.getElementById('cur');
+  var hintText = document.getElementById('hintText');
+
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var vw = 0, vh = 0;
+  var scenes = [];
+  var panEls = stage.querySelectorAll('.fv__pan');
+  for (var i = 0; i < panEls.length; i++) {
+    scenes.push({
+      el: panEls[i],
+      ar: parseFloat(panEls[i].dataset.ar),
+      tx: 0, ty: 0, cx: 0, cy: 0,
+      maxX: 0, maxY: 0
+    });
+  }
+
+  var active = 0;
+  var dragging = false, lastX = 0, lastY = 0, startX = 0, startY = 0;
+  var horizontalLock = null;
+  var vx = 0;
+  var pullT = 0, pullC = 0;
+  var trans = null;
+  var hinted = false;
+
+  function clamp(v, m) { return Math.max(-m, Math.min(m, v)); }
+  function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+  function layout() {
+    var r = fv.getBoundingClientRect();
+    vw = r.width;
+    vh = r.height;
+    for (var i = 0; i < scenes.length; i++) {
+      var s = scenes[i];
+      var h = vh * OVERSCAN;
+      var w = h * s.ar;
+      if (w < vw * 1.06) { w = vw * 1.06; h = w / s.ar; }
+      s.el.style.width = w + 'px';
+      s.el.style.height = h + 'px';
+      s.maxX = Math.max(0, (w - vw) / 2);
+      s.maxY = Math.max(0, (h - vh) / 2);
+      s.tx = clamp(s.tx, s.maxX);
+      s.ty = clamp(s.ty, s.maxY);
+    }
+  }
+
+  function neighbor(dir) {
+    var n = active + dir;
+    return (n >= 0 && n < scenes.length) ? n : -1;
+  }
+
+  function setHint(t) { hintText.textContent = t; }
+
+  stage.addEventListener('pointerdown', function (e) {
+    if (trans) return;
+    dragging = true;
+    horizontalLock = null;
+    stage.classList.add('is-grabbing');
+    lastX = startX = e.clientX;
+    lastY = startY = e.clientY;
+    vx = 0;
+  });
+
+  stage.addEventListener('pointermove', function (e) {
+    if (!dragging || trans) return;
+    var dx = e.clientX - lastX;
+    var dy = e.clientY - lastY;
+    if (horizontalLock === null) {
+      var adx = Math.abs(e.clientX - startX);
+      var ady = Math.abs(e.clientY - startY);
+      if (adx > 8 || ady > 8) horizontalLock = adx >= ady;
+    }
+    if (horizontalLock === false) return;
+    if (horizontalLock === true) {
+      if (e.cancelable) e.preventDefault();
+      if (stage.setPointerCapture && !stage.hasPointerCapture(e.pointerId)) {
+        stage.setPointerCapture(e.pointerId);
+      }
+    }
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    var s = scenes[active];
+    var want = s.tx - dx * 1.1;
+    vx = -dx;
+
+    if (want > s.maxX && neighbor(1) !== -1) {
+      s.tx = s.maxX;
+      pullT = Math.min(PULL_THRESHOLD * 1.6, pullT + (want - s.maxX));
+    } else if (want < -s.maxX && neighbor(-1) !== -1) {
+      s.tx = -s.maxX;
+      pullT = Math.max(-PULL_THRESHOLD * 1.6, pullT - (-s.maxX - want));
+    } else {
+      s.tx = clamp(want, s.maxX);
+      pullT = 0;
+    }
+    s.ty = clamp(s.ty - dy * 0.7, s.maxY);
+
+    if (!hinted && Math.abs(e.clientX - startX) > 30) {
+      hinted = true;
+      setHint('SWIPE TO MOVE ON');
+    }
+  });
+
+  function release() {
+    if (!dragging) return;
+    dragging = false;
+    stage.classList.remove('is-grabbing');
+    if (trans) return;
+    var s = scenes[active];
+
+    if (Math.abs(pullT) >= PULL_THRESHOLD) {
+      var dir = pullT > 0 ? 1 : -1;
+      if (neighbor(dir) !== -1) { startTransition(dir); return; }
+    }
+    pullT = 0;
+    if (!reduced && horizontalLock === true) {
+      s.tx = clamp(s.tx + vx * 12, s.maxX);
+    }
+  }
+  stage.addEventListener('pointerup', release);
+  stage.addEventListener('pointercancel', release);
+
+  window.addEventListener('keydown', function (e) {
+    if (trans) return;
+    var s = scenes[active];
+    if (e.key === 'ArrowRight') {
+      if (s.tx >= s.maxX - 1 && neighbor(1) !== -1) startTransition(1);
+      else s.tx = clamp(s.tx + 160, s.maxX);
+    } else if (e.key === 'ArrowLeft') {
+      if (s.tx <= -s.maxX + 1 && neighbor(-1) !== -1) startTransition(-1);
+      else s.tx = clamp(s.tx - 160, s.maxX);
+    }
+  });
+
+  function startTransition(dir) {
+    var from = scenes[active];
+    var to = scenes[active + dir];
+    to.tx = to.cx = -dir * to.maxX * ENTER_OFFSET;
+    to.ty = to.cy = 0;
+    trans = { from: from, to: to, dir: dir, t: 0 };
+    pullT = 0;
+    active += dir;
+    cur.textContent = active + 1 < 10 ? '0' + (active + 1) : String(active + 1);
+  }
+
+  function applyScene(s, x, y, opacity, scale, extraX) {
+    s.el.style.visibility = opacity > 0.001 ? 'visible' : 'hidden';
+    s.el.style.opacity = opacity.toFixed(3);
+    var rot = s.maxX ? (x / s.maxX) * 1.8 : 0;
+    s.el.style.transform =
+      'translate(-50%, -50%) translate3d(' + (-(x) + (extraX || 0)).toFixed(2) + 'px,' +
+      (-y).toFixed(2) + 'px, 0) rotateY(' + rot.toFixed(3) + 'deg)' +
+      ' scale(' + scale.toFixed(4) + ')';
+  }
+
+  var prevTime = 0;
+  function frame(now) {
+    var dt = prevTime ? Math.min(0.05, (now - prevTime) / 1000) : 0.016;
+    prevTime = now;
+
+    var k = reduced ? 1 : 0.085;
+    pullC += (pullT - pullC) * (reduced ? 1 : 0.18);
+
+    if (trans) {
+      trans.t += dt / (reduced ? 0.001 : TRANS_DURATION);
+      var t = Math.min(1, trans.t);
+      var e = ease(t);
+      var d = trans.dir;
+
+      applyScene(trans.from, trans.from.cx, trans.from.cy, 1 - e, 1 + 0.06 * e, -d * (PULL_VISUAL_MAX + 90 * e));
+      trans.to.cx += (trans.to.tx - trans.to.cx) * k;
+      applyScene(trans.to, trans.to.cx, trans.to.cy, e, 1.09 - 0.09 * e, d * 50 * (1 - e));
+
+      if (t >= 1) {
+        applyScene(trans.from, trans.from.cx, trans.from.cy, 0, 1, 0);
+        trans = null;
+      }
+    } else {
+      var s = scenes[active];
+      s.cx += (s.tx - s.cx) * k;
+      s.cy += (s.ty - s.cy) * k;
+
+      var pv = Math.sign(pullC) * Math.min(PULL_VISUAL_MAX, Math.abs(pullC) * 0.45);
+      applyScene(s, s.cx, s.cy, 1, 1, -pv);
+
+      var nIdx = pullC > 4 ? neighbor(1) : (pullC < -4 ? neighbor(-1) : -1);
+      for (var i = 0; i < scenes.length; i++) {
+        if (i === active) continue;
+        if (i === nIdx) {
+          var n = scenes[i];
+          var prog = Math.min(1, Math.abs(pullC) / PULL_THRESHOLD);
+          var d2 = pullC > 0 ? 1 : -1;
+          n.cx = -d2 * n.maxX * ENTER_OFFSET;
+          n.cy = 0;
+          applyScene(n, n.cx, n.cy, prog * 0.55, 1.09, d2 * 50);
+        } else {
+          scenes[i].el.style.opacity = '0';
+          scenes[i].el.style.visibility = 'hidden';
+        }
+      }
+
+      if (s.maxX) {
+        var p = (clamp(s.cx, s.maxX) / s.maxX + 1) / 2;
+        dot.style.left = (10 + p * 80) + '%';
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  function start() {
+    layout();
+    var s = scenes[0];
+    s.tx = s.cx = -s.maxX * 0.35;
+    applyScene(s, s.cx, 0, 1, 1, 0);
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', layout);
+
+  var img0 = scenes[0].el.querySelector('img');
+  if (img0.complete) start(); else img0.addEventListener('load', start);
+})();
+</script>
+</body>
+</html>

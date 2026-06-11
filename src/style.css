@@ -1,0 +1,207 @@
+:root {
+  --ink: #16110b;
+  --paper: #f4efe6;
+  --paper-dim: rgba(244, 239, 230, 0.72);
+  --line: rgba(244, 239, 230, 0.32);
+  --serif: "Zen Old Mincho", "Hiragino Mincho ProN", serif;
+  --sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--sans);
+  overscroll-behavior-y: none;
+}
+
+.fv {
+  position: relative;
+  height: 100svh;
+  min-height: 560px;
+  overflow: hidden;
+}
+.fv__stage {
+  position: absolute;
+  inset: 0;
+  perspective: 1400px;
+  touch-action: pan-y;
+  cursor: grab;
+  outline: none;
+}
+.fv__stage.is-grabbing { cursor: grabbing; }
+.fv__stage:focus-visible { box-shadow: inset 0 0 0 2px var(--line); }
+
+/* WebGL canvas */
+.fv__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* CSS fallback panes */
+.fv__pan {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  will-change: transform, opacity;
+  opacity: 0;
+  visibility: hidden;
+}
+.fv__pan img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.fv__shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, rgba(22, 17, 11, 0.42) 0%, rgba(22, 17, 11, 0) 26%),
+    linear-gradient(to top, rgba(22, 17, 11, 0.62) 0%, rgba(22, 17, 11, 0) 46%);
+}
+
+.fv__header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(18px, 3vw, 32px) clamp(20px, 4vw, 48px);
+  z-index: 3;
+}
+.fv__logo {
+  font-family: var(--serif);
+  font-size: clamp(18px, 2vw, 22px);
+  letter-spacing: 0.34em;
+  color: var(--paper);
+  text-decoration: none;
+}
+.fv__logo small {
+  display: block;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--paper-dim);
+  margin-top: 4px;
+}
+.fv__nav { display: flex; gap: clamp(18px, 3vw, 36px); }
+.fv__nav a {
+  color: var(--paper-dim);
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid transparent;
+  transition: color 0.3s, border-color 0.3s;
+}
+.fv__nav a:hover, .fv__nav a:focus-visible { color: var(--paper); border-color: var(--line); }
+@media (max-width: 640px) { .fv__nav { display: none; } }
+
+.fv__copy {
+  position: absolute;
+  left: clamp(20px, 4vw, 48px);
+  bottom: clamp(76px, 13svh, 120px);
+  z-index: 3;
+  display: flex;
+  gap: clamp(14px, 2vw, 22px);
+  pointer-events: none;
+}
+.fv__rule { width: 1px; background: var(--line); }
+.fv__copy h1 {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(26px, 4.6vw, 50px);
+  line-height: 1.55;
+  letter-spacing: 0.12em;
+  text-shadow: 0 1px 24px rgba(22, 17, 11, 0.45);
+}
+.fv__copy p {
+  margin-top: clamp(10px, 1.6vw, 16px);
+  font-size: clamp(12px, 1.4vw, 14px);
+  letter-spacing: 0.22em;
+  color: var(--paper-dim);
+}
+
+.fv__gauge {
+  position: absolute;
+  right: clamp(20px, 4vw, 48px);
+  bottom: clamp(28px, 5svh, 44px);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+.fv__gauge span {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--paper-dim);
+}
+.fv__track {
+  position: relative;
+  width: 128px;
+  height: 1px;
+  background: var(--line);
+}
+.fv__dot {
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 1px;
+  background: var(--paper);
+  transform: translate(-50%, -50%);
+}
+.fv__count {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--paper-dim);
+  font-variant-numeric: tabular-nums;
+}
+.fv__count b { font-weight: 500; color: var(--paper); }
+
+.fv__scroll {
+  position: absolute;
+  left: clamp(20px, 4vw, 48px);
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+.fv__scroll span {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--paper-dim);
+  writing-mode: vertical-rl;
+}
+.fv__scroll i {
+  display: block;
+  width: 1px;
+  height: 52px;
+  background: var(--line);
+  overflow: hidden;
+  position: relative;
+}
+.fv__scroll i::after {
+  content: "";
+  position: absolute;
+  left: 0; top: -100%;
+  width: 1px; height: 100%;
+  background: var(--paper);
+  animation: scrollline 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes scrollline { to { top: 100%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fv__scroll i::after { animation: none; }
+}
